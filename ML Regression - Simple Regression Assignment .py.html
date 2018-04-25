@@ -1,0 +1,157 @@
+
+# coding: utf-8
+
+# In[ ]:
+
+
+
+
+# In[60]:
+
+import graphlab
+sales = graphlab.SFrame('/Users/josenoriegaportilla/Documents/MachineLearning/Regression/Week 1/kc_house_data.gl/')
+sales.head()
+
+
+# In[30]:
+
+train_data, test_data = sales.random_split(.8,seed=0)
+
+
+# In[26]:
+
+def simple_linear_regression(input_feature, output):
+    # compute the sum of input_feature and output
+    inputSum = input_feature.sum()
+    outputSum = output.sum()
+    
+    # compute the product of the output and the input_feature and its sum
+    productInputOutputSum = (input_feature * output).sum()
+    
+    # compute the squared value of the input_feature and its sum
+    inputSquared = input_feature * input_feature;
+    inputSquareSum = inputSquared.sum()
+
+    
+    # use the formula for the slope
+    num =  productInputOutputSum - (inputSum * outputSum / len(input_feature))
+    den =  inputSquareSum - (inputSum*inputSum/len(input_feature))
+    
+    slope = num/den
+    # use the formula for the intercept
+    
+    intercept = (outputSum / len(input_feature) - (slope * inputSum/len(input_feature)))   
+    return (intercept, slope)
+
+
+# In[27]:
+
+test_feature = graphlab.SArray(range(5))
+test_output = graphlab.SArray(1 + 1*test_feature)
+(test_intercept, test_slope) =  simple_linear_regression(test_feature, test_output)
+print "Intercept: " + str(test_intercept)
+print "Slope: " + str(test_slope)
+
+
+# In[31]:
+
+sqft_intercept, sqft_slope = simple_linear_regression(train_data['sqft_living'], train_data['price'])
+
+print "Intercept: " + str(sqft_intercept)
+print "Slope: " + str(sqft_slope)
+
+
+# In[49]:
+
+def get_regression_predictions(input_feature, intercept, slope):
+    predicted_values = intercept + (slope*(input_feature))
+    return predicted_values
+
+
+# In[51]:
+
+my_house_sqft = 2650
+estimated_price = get_regression_predictions(my_house_sqft, sqft_intercept, sqft_slope)
+print "The estimated price for a house with %d squarefeet is $%.2f" % (my_house_sqft, estimated_price)
+
+
+# In[53]:
+
+def get_residual_sum_of_squares(input_feature, output, intercept, slope):
+    # First get the predictions
+    predictions = get_regression_predictions(input_feature, intercept, slope)
+
+    # then compute the residuals (since we are squaring it doesn't matter which order you subtract)
+    RSS = ((output - predictions)*(output - predictions)).sum()
+
+    # square the residuals and add them up
+
+    return(RSS)
+
+
+# In[55]:
+
+print get_residual_sum_of_squares(test_feature, test_output, test_intercept, test_slope) # should be 0.0
+
+
+# In[56]:
+
+rss_prices_on_sqft = get_residual_sum_of_squares(train_data['sqft_living'], train_data['price'], sqft_intercept, sqft_slope)
+print 'The RSS of predicting Prices based on Square Feet is : ' + str(rss_prices_on_sqft)
+
+
+# In[57]:
+
+def inverse_regression_predictions(output, intercept, slope):
+    # solve output = intercept + slope*input_feature for input_feature. Use this equation to compute the inverse predictions:
+    estimated_feature = (output - intercept) / slope
+    return estimated_feature
+
+
+# In[59]:
+
+my_house_price = 800000
+estimated_squarefeet = inverse_regression_predictions(my_house_price, sqft_intercept, sqft_slope)
+print "The estimated squarefeet for a house worth $%.2f is %d" % (my_house_price, estimated_squarefeet)
+
+
+# In[62]:
+
+# Estimate the slope and intercept for predicting 'price' based on 'bedrooms'
+bedrooms_intercept, bedrooms_slope = simple_linear_regression(train_data['bedrooms'], train_data['price'])
+
+print "Intercept: " + str(bedrooms_intercept)
+print "Slope: " + str(bedrooms_slope)
+
+
+# In[79]:
+
+# Compute RSS when using bedrooms on TEST data:
+rss_prices_test_bedrooms = get_residual_sum_of_squares(test_data['bedrooms'], test_data['price'], bedrooms_intercept, bedrooms_slope)
+rss_prices_test_bedrooms
+
+
+# In[80]:
+
+# Compute RSS when using squarefeet on TEST data:
+rss_prices_test_sqft = get_residual_sum_of_squares(test_data['sqft_living'], test_data['price'], sqft_intercept, sqft_slope)
+rss_prices_test_sqft
+
+
+# In[83]:
+
+rss_sqft = get_residual_sum_of_squares(test_data['sqft_living'], test_data['price'], sqft_intercept, sqft_slope)
+rss_bedroom = get_residual_sum_of_squares(test_data['bedrooms'], test_data['price'], bedrooms_intercept, bedrooms_slope)
+print "RSS sqft: ", rss_sqft
+print "RSS bedroom: ", rss_bedroom
+
+
+# In[ ]:
+
+# RSS based on SQFT has a lower RSS, which means is a better predictor
+
+
+# In[ ]:
+
+
+
